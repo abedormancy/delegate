@@ -43,18 +43,15 @@ export default async function handler(req, res) {
       }
     });
 
-    // 禁用缓存
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Accel-Buffering', 'no');
 
-    // 设置CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
-    // 读取请求体
     let body = null;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       const chunks = [];
@@ -63,7 +60,6 @@ export default async function handler(req, res) {
       }
       body = Buffer.concat(chunks);
       
-      // 如果Content-Type是JSON，确保格式正确
       if (headers['content-type'] && headers['content-type'].includes('application/json')) {
         try {
           JSON.parse(body.toString());
@@ -73,7 +69,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // 发起请求
     const response = await fetch(finalUrl, {
       method: req.method,
       headers: {
@@ -85,7 +80,6 @@ export default async function handler(req, res) {
       duplex: 'half'
     });
 
-    // 复制上游响应头
     response.headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase();
       if (!['content-encoding', 'transfer-encoding', 'connection', 'content-length', 'cache-control', 'etag', 'last-modified'].includes(lowerKey)) {
@@ -93,15 +87,12 @@ export default async function handler(req, res) {
       }
     });
 
-    // 强制设置不缓存
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    // 设置状态码
     res.status(response.status);
 
-    // 处理流式响应
     if (response.body) {
       const reader = response.body.getReader();
       
@@ -137,7 +128,6 @@ export default async function handler(req, res) {
   }
 }
 
-// 禁用body解析器，以便处理原始请求体
 export const config = {
   api: {
     bodyParser: false,
