@@ -1,3 +1,5 @@
+import { Readable } from 'stream';
+
 export default async function handler(req, res) {
   const { slug } = req.query;
 
@@ -52,7 +54,26 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
-    // 发起请求，禁用缓存
+    // 读取请求体
+    let body = null;
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      body = Buffer.concat(chunks);
+      
+      // 如果Content-Type是JSON，确保格式正确
+      if (headers['content-type'] && headers['content-type'].includes('application/json')) {
+        try {
+          JSON.parse(body.toString());
+        } catch (e) {
+          // 如果JSON格式无效，保持原样传递
+        }
+      }
+    }
+
+    // 发起请求
     const response = await fetch(finalUrl, {
       method: req.method,
       headers: {
@@ -60,11 +81,11 @@ export default async function handler(req, res) {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
       },
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
+      body: body,
       duplex: 'half'
     });
 
-    // 复制上游响应头，但排除可能导致缓存的头
+    // 复制上游响应头
     response.headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase();
       if (!['content-encoding', 'transfer-encoding', 'connection', 'content-length', 'cache-control', 'etag', 'last-modified'].includes(lowerKey)) {
