@@ -1,7 +1,7 @@
 {
     "functions": {
       "pages/api/fetch/[...slug].js": {
-        "maxDuration": 30
+        "maxDuration": 600
       }
     },
     "rewrites": [
